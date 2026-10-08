@@ -1,0 +1,95 @@
+@import './katex.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Layout: barra lateral con "el camino" + área de trabajo en paneles tipo instrumento.
+   Paleta: tinta azul-grafito sobre papel milimetrado frío; teal como acento de interacción;
+   colores semánticos fijos para los lados: opuesto (coral), adyacente (azul), hipotenusa (violeta), ángulo (ámbar). */
+:root {
+  --bg: 243 245 248;
+  --panel: 255 255 255;
+  --panel2: 236 240 245;
+  --line: 212 219 228;
+  --ink: 16 24 38;
+  --muted: 88 100 118;
+  --accent: 13 122 112;
+  --accent-ink: 255 255 255;
+  --opp: 214 58 72;
+  --adj: 37 99 220;
+  --hyp: 124 58 237;
+  --ang: 202 120 8;
+  --ok: 21 145 72;
+  --warn: 196 120 10;
+  --bad: 205 45 55;
+  --grid: 16 24 38;
+  --grid-a: 0.055;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: 10 14 21; --panel: 16 22 32; --panel2: 23 31 44; --line: 38 50 67;
+    --ink: 226 232 241; --muted: 139 152 172; --accent: 45 212 191; --accent-ink: 6 30 28;
+    --opp: 255 110 118; --adj: 102 163 255; --hyp: 176 145 255; --ang: 251 191 36;
+    --ok: 74 222 128; --warn: 251 191 36; --bad: 248 113 113; --grid: 200 215 235; --grid-a: 0.05;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: 10 14 21; --panel: 16 22 32; --panel2: 23 31 44; --line: 38 50 67;
+  --ink: 226 232 241; --muted: 139 152 172; --accent: 45 212 191; --accent-ink: 6 30 28;
+  --opp: 255 110 118; --adj: 102 163 255; --hyp: 176 145 255; --ang: 251 191 36;
+  --ok: 74 222 128; --warn: 251 191 36; --bad: 248 113 113; --grid: 200 215 235; --grid-a: 0.05;
+  color-scheme: dark;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background-color: rgb(var(--bg));
+  background-image:
+    linear-gradient(rgb(var(--grid) / var(--grid-a)) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--grid) / var(--grid-a)) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: rgb(var(--ink));
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+h1, h2, h3, h4 { font-family: 'Instrument Sans', 'IBM Plex Sans', system-ui, sans-serif; text-wrap: balance; letter-spacing: -0.01em; }
+.num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11.5px; letter-spacing: 0.03em; color: rgb(var(--muted)); }
+
+:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; border-radius: 6px; }
+
+/* Sliders con el color del concepto que controlan */
+input[type='range'].slider {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: transparent; cursor: pointer;
+  --c: var(--accent);
+}
+input[type='range'].slider::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: rgb(var(--line)); }
+input[type='range'].slider::-moz-range-track { height: 4px; border-radius: 4px; background: rgb(var(--line)); }
+input[type='range'].slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; margin-top: -7px;
+  background: rgb(var(--panel)); border: 3px solid rgb(var(--c)); box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+input[type='range'].slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: rgb(var(--panel)); border: 3px solid rgb(var(--c)); }
+
+/* SVG */
+.svg-text { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.drag-handle { cursor: grab; touch-action: none; }
+.drag-handle:active { cursor: grabbing; }
+svg.plane { touch-action: none; user-select: none; -webkit-user-select: none; display: block; width: 100%; height: auto; }
+
+.katex { font-size: 1.08em; }
+.katex-display { margin: 0.4em 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+
+@keyframes fadeUp { from { opacity: 0.2; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.fade-up { animation: fadeUp 0.35s ease both; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+.scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: rgb(var(--line)); border-radius: 6px; }
