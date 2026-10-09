@@ -118,8 +118,8 @@ export function Layout({ route, go, children }: { route: string; go: (r: string)
         {/* Cajón móvil */}
         {open && (
           <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menú">
-            <button type="button" aria-label="Cerrar menú" className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-            <div className="absolute bottom-0 left-0 top-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-line bg-panel px-3 py-4" style={{ paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))' }}>
+            <button type="button" aria-label="Cerrar menú" className="overlay-in absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+            <div className="drawer-panel absolute bottom-0 left-0 top-0 w-[290px] max-w-[85vw] overflow-y-auto border-r border-line bg-panel px-3 py-4" style={{ paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))' }}>
               <div className="mb-3 flex items-center justify-between px-2">
                 <span className="font-display font-semibold">Navegación</span>
                 <button type="button" className="h-8 w-8 rounded-md border border-line" aria-label="Cerrar" onClick={() => setOpen(false)}>✕</button>

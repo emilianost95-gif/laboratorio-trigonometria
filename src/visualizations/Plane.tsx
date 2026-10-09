@@ -290,7 +290,7 @@ export function DraggablePoint({ at, onChange, tone = 'accent', label, snap = 0,
     const v = d[e.key];
     if (!v) return;
     e.preventDefault();
-    let p = { x: at.x + v[0], y: at.y + v[1] };
+    let p = { x: Math.min(view.xmax, Math.max(view.xmin, at.x + v[0])), y: Math.min(view.ymax, Math.max(view.ymin, at.y + v[1])) };
     if (constrain) p = constrain(p);
     onChange({ x: +p.x.toFixed(6), y: +p.y.toFixed(6) });
   };
@@ -299,6 +299,7 @@ export function DraggablePoint({ at, onChange, tone = 'accent', label, snap = 0,
   return (
     <g
       className="drag-handle"
+      data-drag={drag}
       tabIndex={0}
       role="slider"
       aria-label={`${name ?? label ?? 'Punto'} (${at.x.toFixed(1)}, ${at.y.toFixed(1)}). Usa las flechas para moverlo.`}
@@ -311,7 +312,7 @@ export function DraggablePoint({ at, onChange, tone = 'accent', label, snap = 0,
       onClick={(e) => e.stopPropagation()}
     >
       <circle cx={cx} cy={cy} r={px(20)} fill="transparent" />
-      <circle cx={cx} cy={cy} r={px(drag ? r + 4 : r + 2)} fill={col(tone, 0.18)} />
+      <circle className="drag-halo" cx={cx} cy={cy} r={px(r + 3)} fill={col(tone, 0.2)} />
       <circle cx={cx} cy={cy} r={px(r)} fill={col(tone)} stroke="rgb(var(--panel))" strokeWidth={px(2)} />
       {label && (
         <text x={cx + px(11)} y={cy - px(11)} fontSize={px(14)} fontWeight={700} className="svg-text" fill={col(tone)} stroke="rgb(var(--panel))" strokeWidth={px(4)} paintOrder="stroke" pointerEvents="none">

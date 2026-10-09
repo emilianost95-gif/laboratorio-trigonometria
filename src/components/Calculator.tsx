@@ -118,7 +118,7 @@ export function FloatingCalculator() {
   }, []);
   if (!open) return null;
   return (
-    <div role="dialog" aria-label="Calculadora científica" className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-panel shadow-2xl sm:inset-x-auto sm:bottom-4 sm:right-4 sm:w-[360px] sm:rounded-xl sm:border"
+    <div role="dialog" aria-label="Calculadora científica" className="pop-in fixed inset-x-0 bottom-0 z-50 border-t border-line bg-panel shadow-2xl sm:inset-x-auto sm:bottom-4 sm:right-4 sm:w-[360px] sm:rounded-xl sm:border"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <div className="flex items-center justify-between border-b border-line px-3 py-2">
         <span className="font-display text-[14px] font-semibold">Calculadora científica</span>

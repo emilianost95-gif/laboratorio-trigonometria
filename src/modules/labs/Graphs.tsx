@@ -41,7 +41,7 @@ function Curve({ p, tone = 'accent', width = 2.6, dash, opacity = 1, upTo }: { p
     }
     segs[segs.length - 1].push(`${sx(deg / U)},${sy(y)}`);
   }
-  return <g pointerEvents="none">{segs.filter((s) => s.length > 1).map((s, i) => <polyline key={i} points={s.join(' ')} fill="none" stroke={`rgb(var(--${tone}))`} strokeOpacity={opacity} strokeWidth={px(width)} strokeDasharray={dash ? `${px(dash)} ${px(dash)}` : undefined} strokeLinejoin="round" />)}</g>;
+  return <g pointerEvents="none" className={tone === 'accent' && opacity === 1 ? 'glow' : undefined} style={{ color: `rgb(var(--${tone}))` }}>{segs.filter((s) => s.length > 1).map((s, i) => <polyline key={i} points={s.join(' ')} fill="none" stroke={`rgb(var(--${tone}))`} strokeOpacity={opacity} strokeWidth={px(width)} strokeDasharray={dash ? `${px(dash)} ${px(dash)}` : undefined} strokeLinejoin="round" />)}</g>;
 }
 
 function Equation({ p }: { p: Params }) {

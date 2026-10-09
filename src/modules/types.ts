@@ -1,6 +1,6 @@
 export type Category =
   | 'coords' | 'distance' | 'slope' | 'angles' | 'triangles' | 'right' | 'pythagoras'
-  | 'sin' | 'cos' | 'tan' | 'soh' | 'solve' | 'unit' | 'identity' | 'oblique' | 'graphs' | 'sum';
+  | 'sin' | 'cos' | 'tan' | 'soh' | 'solve' | 'unit' | 'identity' | 'oblique' | 'graphs' | 'sum' | 'inverse' | 'equations' | 'double';
 
 export type Level = 1 | 2 | 3 | 4 | 5;
 
@@ -30,6 +30,9 @@ export const CATEGORY_NAMES: Record<Category, string> = {
   oblique: 'Ley del seno y del coseno',
   graphs: 'Gráficas trigonométricas',
   sum: 'Suma de ángulos',
+  inverse: 'Funciones inversas',
+  equations: 'Ecuaciones trigonométricas',
+  double: 'Ángulo doble y mitad',
 };
 
 /** Una respuesta equivocada "esperable" y por qué aparece. */

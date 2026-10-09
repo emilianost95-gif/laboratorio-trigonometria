@@ -10,7 +10,8 @@ const GROUPS: { name: string; cats: Category[] }[] = [
   { name: 'Base', cats: ['coords', 'distance', 'slope', 'angles', 'triangles'] },
   { name: 'Triángulo rectángulo', cats: ['right', 'pythagoras', 'soh'] },
   { name: 'Razones', cats: ['sin', 'cos', 'tan', 'solve'] },
-  { name: 'Círculo y más allá', cats: ['unit', 'identity', 'oblique', 'graphs', 'sum'] },
+  { name: 'Círculo y más allá', cats: ['unit', 'identity', 'oblique', 'graphs'] },
+  { name: 'Identidades y ecuaciones', cats: ['sum', 'double', 'inverse', 'equations'] },
 ];
 
 export function Challenges() {

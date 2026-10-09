@@ -282,3 +282,34 @@ describe('ley del seno y del coseno (triángulos cualesquiera)', () => {
     expect(solveOblique({ a: 3, b: 4, C: 90 }).solutions[0].c).toBeCloseTo(5, 12);
   });
 });
+
+import { solveTrigEq, principalDeg } from '../src/math/trigeq';
+import { sinDeg as sD, cosDeg as cD, tanDeg as tD } from '../src/math/trig';
+
+describe('ecuaciones trigonométricas f(Bx) = k', () => {
+  const F = { sin: sD, cos: cD, tan: tD };
+  it('cada solución cumple la ecuación y cae en [0°, 360°)', () => {
+    for (const fn of ['sin', 'cos', 'tan'] as const)
+      for (const B of [1, 2, 3, 4])
+        for (let k = -0.95; k <= 0.95; k += 0.05) {
+          const r = solveTrigEq(fn, k, B);
+          expect(r.solutions.length, `${fn} B=${B} k=${k}`).toBe(2 * B);
+          for (const s of r.solutions) {
+            expect(s.x).toBeGreaterThanOrEqual(0);
+            expect(s.x).toBeLessThan(360);
+            expect(F[fn](B * s.x)).toBeCloseTo(k, 5);
+          }
+          expect(new Set(r.solutions.map((s) => s.x)).size).toBe(r.solutions.length);
+        }
+  });
+  it('extremos, valores imposibles y notables', () => {
+    expect(solveTrigEq('sin', 1, 1).solutions.map((s) => s.x)).toEqual([90]);
+    expect(solveTrigEq('cos', -1, 1).solutions.map((s) => s.x)).toEqual([180]);
+    expect(solveTrigEq('cos', 1, 2).solutions.map((s) => s.x)).toEqual([0, 180]);
+    expect(solveTrigEq('sin', 1.2, 1).solutions).toEqual([]);
+    expect(principalDeg('cos', 2)).toBeNull();
+    const r = solveTrigEq('sin', Math.sqrt(3) / 2, 2).solutions.map((s) => +s.x.toFixed(4));
+    expect(r).toEqual([30, 60, 210, 240]);
+    expect(solveTrigEq('tan', 1, 1).solutions.map((s) => +s.x.toFixed(4))).toEqual([45, 225]);
+  });
+});

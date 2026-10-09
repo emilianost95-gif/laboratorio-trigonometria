@@ -1,25 +1,41 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MODULES } from '../data/modules';
 import { isUnlocked, levelInfo, useStore } from '../store/store';
 import { Badge, Button, Panel } from '../components/ui';
 import { RichText } from '../components/Tex';
 import { fmt } from '../math/core';
 import { cosDeg, sinDeg, tanDeg } from '../math/trig';
-import { UnitCircleView } from '../visualizations/UnitCircle';
+import { UnitCircleView, WavesView } from '../visualizations/UnitCircle';
+import { prefersReducedMotion } from '../utils/motion';
 
 function HeroDemo() {
   const [theta, setTheta] = useState(35);
+  // Gira solo hasta que alguien lo toca: muestra que el punto se puede mover sin robar el control
+  const [auto, setAuto] = useState(() => !prefersReducedMotion());
+  useEffect(() => {
+    if (!auto) return;
+    let raf = 0, last = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min(64, now - last);
+      last = now;
+      setTheta((t) => (t + dt * 0.02) % 360);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [auto]);
   return (
-    <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
-      <div className="mx-auto w-full max-w-[340px] overflow-hidden rounded-xl border border-line">
+    <div className="relative grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_auto]" onPointerDownCapture={() => setAuto(false)} onKeyDownCapture={() => setAuto(false)}>
+      <div className="mx-auto w-full max-w-[340px] overflow-hidden rounded-xl border border-line shadow-[0_18px_50px_-28px_rgb(0_0_0/0.5)]">
         <UnitCircleView theta={theta} onTheta={setTheta} layers={{ triangle: true, projections: true, tangent: false, line: false, quadrants: false }} />
       </div>
       <div className="num grid grid-cols-3 gap-2 text-center sm:grid-cols-1 sm:text-left">
         <div><div className="eyebrow">θ</div><div className="text-[20px] font-semibold text-ang">{fmt(theta, 0)}°</div></div>
         <div><div className="eyebrow">cos θ = x</div><div className="text-[20px] font-semibold text-adj">{fmt(cosDeg(theta), 3)}</div></div>
         <div><div className="eyebrow">sen θ = y</div><div className="text-[20px] font-semibold text-opp">{fmt(sinDeg(theta), 3)}</div></div>
-        <div className="hidden sm:block"><div className="eyebrow">tan θ</div><div className="text-[20px] font-semibold text-accent">{Number.isFinite(tanDeg(theta)) ? fmt(tanDeg(theta), 3) : '—'}</div></div>
+        <div className="hidden sm:block"><div className="eyebrow">tan θ</div><div className="text-[20px] font-semibold text-accent">{Number.isFinite(tanDeg(theta)) && Math.abs(tanDeg(theta)) < 1000 ? fmt(tanDeg(theta), 3) : '—'}</div></div>
       </div>
+      <div className="overflow-hidden rounded-xl border border-line sm:col-span-2"><WavesView theta={theta} /></div>
     </div>
   );
 }
@@ -33,8 +49,9 @@ export function Home({ go }: { go: (r: string) => void }) {
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-6 rounded-2xl border border-line bg-panel p-5 sm:p-7 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 flex-col justify-center">
+      <section className="relative grid gap-6 overflow-hidden rounded-2xl border border-line bg-panel p-5 sm:p-7 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        <div className="aurora" aria-hidden />
+        <div className="relative flex min-w-0 flex-col justify-center">
           <div className="eyebrow">Laboratorio interactivo · {MODULES.length} módulos</div>
           <h1 className="mt-2 text-[32px] font-semibold leading-[1.08] sm:text-[44px]">Camino a la trigonometría</h1>
           <p className="mt-3 max-w-[56ch] text-[16px] text-muted">
@@ -50,7 +67,7 @@ export function Home({ go }: { go: (r: string) => void }) {
       </section>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Panel><div className="eyebrow">Nivel {lv.index}</div><div className="font-display text-[20px] font-semibold">{lv.name}</div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-panel2"><div className="h-full bg-accent" style={{ width: `${lv.progress * 100}%` }} /></div><div className="num mt-1 text-[12px] text-muted">{lv.xp} XP{lv.next ? ` · siguiente en ${lv.next}` : ''}</div></Panel>
+        <Panel><div className="eyebrow">Nivel {lv.index}</div><div className="font-display text-[20px] font-semibold">{lv.name}</div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-panel2"><div className="bar h-full bg-accent" style={{ transform: `scaleX(${lv.progress})` }} /></div><div className="num mt-1 text-[12px] text-muted">{lv.xp} XP{lv.next ? ` · siguiente en ${lv.next}` : ''}</div></Panel>
         <Panel><div className="eyebrow">Módulos</div><div className="num text-[26px] font-semibold">{done}<span className="text-[15px] text-muted">/{MODULES.length}</span></div><div className="text-[12.5px] text-muted">completados</div></Panel>
         <Panel><div className="eyebrow">Ejercicios</div><div className="num text-[26px] font-semibold">{state.stats.solved}</div><div className="text-[12.5px] text-muted">{acc === null ? 'aún sin intentos' : `${acc} % de precisión`}</div></Panel>
         <Panel><div className="eyebrow">Racha</div><div className="num text-[26px] font-semibold text-ang">{state.streak.current} {state.streak.current === 1 ? 'día' : 'días'}</div><div className="text-[12.5px] text-muted">mejor: {state.streak.best}</div></Panel>
@@ -61,14 +78,14 @@ export function Home({ go }: { go: (r: string) => void }) {
           <h2 className="text-[22px] font-semibold">El camino</h2>
           <span className="text-[13px] text-muted">{state.settings.freeMode ? 'Modo libre activo: todo desbloqueado' : 'Cada módulo se desbloquea al completar el anterior'}</span>
         </div>
-        <ol className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+        <ol className="stagger grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
           {MODULES.map((m) => {
             const p = state.modules[m.id];
             const unlocked = isUnlocked(state, m.id);
             return (
               <li key={m.id}>
                 <a href={`#${m.id}`} onClick={(e) => { e.preventDefault(); go(m.id); }}
-                  className={`flex h-full gap-3 rounded-xl border bg-panel p-3.5 transition-colors hover:border-accent ${m.id === nextMod.id ? 'border-accent/60' : 'border-line'} ${unlocked ? '' : 'opacity-60'}`}>
+                  className={`lift flex h-full gap-3 rounded-xl border bg-panel p-3.5 hover:border-accent ${m.id === nextMod.id ? 'border-accent/60' : 'border-line'} ${unlocked ? '' : 'opacity-60'}`}>
                   <span className={`num flex h-11 w-12 shrink-0 items-center justify-center rounded-lg border text-[13px] font-semibold ${p?.completed ? 'border-ok/50 text-ok' : 'border-line text-ink'}`}>{m.glyph}</span>
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-1.5"><span className="num text-[12px] text-muted">{String(m.n).padStart(2, '0')}</span><span className="font-semibold">{m.title}</span>
@@ -88,7 +105,7 @@ export function Home({ go }: { go: (r: string) => void }) {
           { id: 'desafios', t: 'Desafíos', d: 'Problemas generados al azar en 5 niveles, con pistas y diagnóstico de errores.' },
           { id: 'cuaderno', t: 'Cuaderno de laboratorio', d: `Tus notas, fórmulas y descubrimientos. ${state.notes.length ? `${state.notes.length} guardados.` : 'Aún vacío.'}` },
         ].map((x) => (
-          <a key={x.id} href={`#${x.id}`} onClick={(e) => { e.preventDefault(); go(x.id); }} className="rounded-xl border border-line bg-panel p-4 hover:border-accent">
+          <a key={x.id} href={`#${x.id}`} onClick={(e) => { e.preventDefault(); go(x.id); }} className="lift rounded-xl border border-line bg-panel p-4 hover:border-accent">
             <div className="font-semibold">{x.t} →</div>
             <p className="mt-1 text-[13.5px] text-muted">{x.d}</p>
           </a>

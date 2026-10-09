@@ -44,7 +44,7 @@ export function Progress({ go }: { go: (r: string) => void }) {
         <Panel>
           <div className="eyebrow">Nivel actual · {lv.index}/{LEVELS.length}</div>
           <div className="font-display text-[22px] font-semibold">{lv.name}</div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-panel2"><div className="h-full bg-accent" style={{ width: `${lv.progress * 100}%` }} /></div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-panel2"><div className="bar h-full bg-accent" style={{ transform: `scaleX(${lv.progress})` }} /></div>
           <div className="num mt-1 text-[12px] text-muted">{lv.xp} XP {lv.next ? `/ ${lv.next}` : '(máximo)'}</div>
         </Panel>
         <Panel><div className="eyebrow">Módulos completados</div><div className="num text-[28px] font-semibold">{done}<span className="text-[15px] text-muted">/{MODULES.length}</span></div></Panel>
@@ -63,7 +63,7 @@ export function Progress({ go }: { go: (r: string) => void }) {
                   <button type="button" onClick={() => go(m.id)} className="flex w-full items-center gap-3 rounded-md px-1 py-1 text-left hover:bg-panel2">
                     <span className="num w-6 text-[12px] text-muted">{m.n}</span>
                     <span className="min-w-0 flex-1 truncate text-[14px]">{m.title}</span>
-                    <span className="h-1.5 w-24 overflow-hidden rounded-full bg-panel2"><span className={`block h-full ${p?.completed ? 'bg-ok' : 'bg-accent'}`} style={{ width: `${frac * 100}%` }} /></span>
+                    <span className="h-1.5 w-24 overflow-hidden rounded-full bg-panel2"><span className={`bar block h-full ${p?.completed ? 'bg-ok' : 'bg-accent'}`} style={{ transform: `scaleX(${frac})` }} /></span>
                     <span className="w-5 text-[12px]">{p?.completed ? <span className="text-ok">✓</span> : p?.visited ? '·' : ''}</span>
                   </button>
                 </li>
@@ -108,7 +108,7 @@ export function Progress({ go }: { go: (r: string) => void }) {
                 return (
                   <div key={l} className="flex items-center gap-2 text-[13px]">
                     <span className="w-32 truncate">N{l} · {LEVEL_NAMES[l as 1]}</span>
-                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-panel2"><span className="block h-full bg-accent" style={{ width: `${p * 100}%` }} /></span>
+                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-panel2"><span className="bar block h-full bg-accent" style={{ transform: `scaleX(${p})` }} /></span>
                     <span className="num w-16 text-right text-muted">{t ? `${Math.round(p * 100)} % (${t.attempts})` : '—'}</span>
                   </div>
                 );

@@ -31,6 +31,9 @@ export const MODULES: ModuleMeta[] = [
   { id: 'm15', n: 15, title: 'Ley del seno y del coseno', glyph: '△⁺', summary: 'Trigonometría para cualquier triángulo, incluido el caso ambiguo.', practice: 'oblique', question: '¿Y si el triángulo no es rectángulo?' },
   { id: 'm16', n: 16, title: 'Gráficas trigonométricas', glyph: '∿', summary: 'Amplitud, período, desfase y desplazamiento: y = A·sen(B(x − C)) + D.', practice: 'graphs', question: '¿Cómo se ve una función trigonométrica y cómo se transforma?' },
   { id: 'm17', n: 17, title: 'Suma de ángulos', glyph: 'α+β', summary: 'sen(α + β), cos(α + β) y el ángulo doble, demostrados girando en el círculo.', practice: 'sum', question: '¿Por qué sen(α + β) no es sen α + sen β?' },
+  { id: 'm18', n: 18, title: 'Funciones inversas', glyph: 'sin⁻¹', summary: 'Del valor al ángulo: arcoseno, arcocoseno y arcotangente, y por qué responden un solo ángulo.', practice: 'inverse', question: '¿Cómo recupero el ángulo si conozco su seno?' },
+  { id: 'm19', n: 19, title: 'Ecuaciones trigonométricas', glyph: 'x=?', summary: 'Todas las soluciones de sen(Bx) = k: ángulo principal, simetría y período.', practice: 'equations', question: '¿Cuántos ángulos cumplen la misma condición?' },
+  { id: 'm20', n: 20, title: 'Ángulo doble y mitad', glyph: '2θ', summary: 'sen 2θ, cos 2θ y θ/2 demostrados con áreas, más el alcance de un lanzamiento.', practice: 'double', question: '¿Por qué duplicar el ángulo no duplica el seno?' },
 ];
 
 export const moduleById = (id: string) => MODULES.find((m) => m.id === id);

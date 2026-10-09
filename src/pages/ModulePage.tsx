@@ -1,10 +1,12 @@
-import { lazy, Suspense, useEffect, useState, type ComponentType } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type ComponentType } from 'react';
 import { moduleById, MODULES, PRACTICE_GOAL } from '../data/modules';
 import { isUnlocked, useStore } from '../store/store';
 import { Practice } from '../components/Practice';
 import { TeacherMode } from '../components/TeacherMode';
 import { Badge, Button, Callout, Segmented } from '../components/ui';
 import { DiagnosticPage } from './Diagnostic';
+import { celebrate } from '../utils/celebrate';
+import { toast } from '../utils/toast';
 
 const LABS: Record<string, ComponentType> = {
   m1: lazy(() => import('../modules/labs/Coordinates')),
@@ -24,6 +26,9 @@ const LABS: Record<string, ComponentType> = {
   m15: lazy(() => import('../modules/labs/Oblique')),
   m16: lazy(() => import('../modules/labs/Graphs')),
   m17: lazy(() => import('../modules/labs/SumAngles')),
+  m18: lazy(() => import('../modules/labs/Inverse')),
+  m19: lazy(() => import('../modules/labs/Equations')),
+  m20: lazy(() => import('../modules/labs/DoubleHalf')),
 };
 
 type Tab = 'lab' | 'teacher' | 'practice';
@@ -36,6 +41,14 @@ export function ModulePage({ id, go }: { id: string; go: (r: string) => void }) 
   useEffect(() => { setTab('lab'); }, [id]);
   // Solo se marca como visitado un módulo abierto (si no, visitar uno bloqueado lo desbloquearía)
   useEffect(() => { if (unlocked) dispatch({ type: 'visit', module: id }); }, [id, unlocked, dispatch]);
+
+  // Celebración solo cuando el módulo pasa a completado mientras está abierto (no al entrar a uno ya completo)
+  const completed = !!state.modules[id]?.completed;
+  const seen = useRef({ id, completed });
+  useEffect(() => {
+    if (seen.current.id === id && !seen.current.completed && completed && id !== 'm0') { celebrate(); toast(`Módulo ${meta.n} completado · +25 XP`); }
+    seen.current = { id, completed };
+  }, [id, completed, meta.n]);
 
   if (id === 'm0') return <DiagnosticPage go={go} />;
 
@@ -72,9 +85,11 @@ export function ModulePage({ id, go }: { id: string; go: (r: string) => void }) 
 
       {unlocked && (
         <Suspense fallback={<div className="rounded-xl border border-line bg-panel p-8 text-center text-muted">Cargando laboratorio…</div>}>
-          {tab === 'lab' && <Lab />}
-          {tab === 'teacher' && <TeacherMode moduleId={id} goLab={() => setTab('lab')} goPractice={() => setTab('practice')} />}
-          {tab === 'practice' && meta.practice && <Practice key={id} category={meta.practice} module={id} />}
+          <div key={tab} className="page-in">
+            {tab === 'lab' && <Lab />}
+            {tab === 'teacher' && <TeacherMode moduleId={id} goLab={() => setTab('lab')} goPractice={() => setTab('practice')} />}
+            {tab === 'practice' && meta.practice && <Practice key={id} category={meta.practice} module={id} />}
+          </div>
         </Suspense>
       )}
 

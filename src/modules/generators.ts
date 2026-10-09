@@ -1123,10 +1123,321 @@ function genSum(level: Level): Problem {
 }
 
 // ======================================================
+// FUNCIONES INVERSAS
+// ======================================================
+type Fn3 = 'sin' | 'cos' | 'tan';
+
+/** Valores notables positivos: [TeX, valor, ángulo agudo]. */
+const NOTABLE3: Record<Fn3, [string, number, number][]> = {
+  sin: [['\\tfrac{1}{2}', 0.5, 30], ['\\tfrac{\\sqrt2}{2}', Math.SQRT1_2, 45], ['\\tfrac{\\sqrt3}{2}', Math.sqrt(3) / 2, 60]],
+  cos: [['\\tfrac{\\sqrt3}{2}', Math.sqrt(3) / 2, 30], ['\\tfrac{\\sqrt2}{2}', Math.SQRT1_2, 45], ['\\tfrac{1}{2}', 0.5, 60]],
+  tan: [['\\tfrac{\\sqrt3}{3}', Math.sqrt(3) / 3, 30], ['1', 1, 45], ['\\sqrt3', Math.sqrt(3), 60]],
+};
+const INV_RANGE: Record<Fn3, string> = { sin: '$[-90°,\\,90°]$', cos: '$[0°,\\,180°]$', tan: '$(-90°,\\,90°)$' };
+
+function genInverse(level: Level): Problem {
+  const fn = pick(['sin', 'cos', 'tan'] as const);
+  if (level === 1) {
+    const others = (['sin', 'cos', 'tan'] as const).filter((f) => f !== fn);
+    const why: Record<Fn3, string> = {
+      sin: 'Ese es el recorrido de $\\sin^{-1}$: la mitad derecha del círculo, donde el seno recorre de $-1$ a $1$ sin repetirse.',
+      cos: 'Ese es el recorrido de $\\cos^{-1}$: la mitad superior del círculo, donde el coseno recorre de $1$ a $-1$ sin repetirse.',
+      tan: 'Ese es el de $\\tan^{-1}$: intervalo **abierto**, porque la tangente no existe en $\\pm90°$.',
+    };
+    const { choices, answer, choiceExplain } = shuffleChoices(INV_RANGE[fn], [...others.map((f) => INV_RANGE[f]), '$[0°,\\,360°)$'], [...others.map((f) => why[f]), 'En una vuelta completa cada valor aparece **dos veces**: la inversa no sabría cuál elegir. Por eso se recorta.']);
+    return mk('inverse', 1, {
+      title: 'Recorrido de la inversa', statement: `¿En qué intervalo están **siempre** las respuestas de $\\${fn}^{-1}(x)$?`, data: [`Función inversa del ${FN_ES[fn]}`],
+      kind: 'choice', choices, answer, choiceExplain,
+      hints: ['La inversa solo puede devolver **un** ángulo por valor: se queda con un trozo donde la función no se repite.', fn === 'cos' ? 'El coseno es la coordenada $x$: recorre todos sus valores en la mitad **superior** del círculo.' : `${fn === 'sin' ? 'El seno es la coordenada $y$' : 'La tangente es la pendiente'}: recorre todos sus valores en la mitad **derecha** del círculo.`],
+      steps: [`$\\${fn}^{-1}$ devuelve ángulos en ${INV_RANGE[fn]} (la rama principal).`, fn === 'tan' ? 'El intervalo es abierto: $\\tan(\\pm90°)$ no existe.' : `En los extremos la función alcanza $${fn === 'sin' ? '-1$ y $1' : '1$ y $-1'}$.`],
+    });
+  }
+  if (level === 2 || level === 3) {
+    const [t, v, ref] = pick(NOTABLE3[fn]);
+    const neg = level === 3;
+    const ans = !neg ? ref : fn === 'cos' ? 180 - ref : -ref;
+    return mk('inverse', level, {
+      title: neg ? 'Inversa de un valor negativo' : 'Inversa de un valor notable',
+      statement: `Calcula $\\${fn}^{-1}\\!\\left(${neg ? '-' : ''}${t}\\right)$ en grados, sin calculadora.`,
+      data: [`$x = ${neg ? '-' : ''}${t} \\approx ${tex(neg ? -v : v, 4)}$`, `Recorrido de $\\${fn}^{-1}$: ${INV_RANGE[fn]}`], kind: 'numeric', answer: ans, unit: '°',
+      hints: [`Pregúntate: ¿qué ángulo tiene ${FN_ES[fn]} igual a $${neg ? '-' : ''}${t}$?`, neg ? (fn === 'cos' ? 'Con coseno negativo el ángulo está en el **II cuadrante**: $180°$ menos el ángulo de referencia.' : 'Con valor negativo la respuesta es un ángulo **negativo** (IV cuadrante), no uno mayor que 180°.') : 'Recuerda la tabla de 30°, 45° y 60°.'],
+      steps: neg
+        ? [`Ángulo de referencia: $\\${fn}\\,${ref}° = ${t}$.`, fn === 'cos' ? `El coseno es negativo en el II cuadrante (dentro de $[0°, 180°]$): $180° - ${ref}° = ${ans}°$.` : `La respuesta debe quedar en ${INV_RANGE[fn]}: se toma el ángulo negativo, $${ans}°$.`]
+        : [`$\\${fn}\\,${ref}° = ${t}$, y $${ref}°$ está en ${INV_RANGE[fn]}.`, `$\\${fn}^{-1}\\!\\left(${t}\\right) = ${ref}°$`],
+      mistakes: neg
+        ? [
+          { value: ref, label: 'Ignoraste el signo', explain: 'Ese es el ángulo para el valor **positivo**. El signo negativo cambia el cuadrante.' },
+          fn === 'cos'
+            ? { value: -ref, label: 'El coseno no es impar', explain: `$\\cos(-${ref}°) = +${t}$: el coseno de un ángulo negativo es positivo. Para un coseno negativo hay que ir al **II cuadrante**.` }
+            : { value: 360 - ref, label: 'Fuera del recorrido', explain: `$${360 - ref}°$ tiene el mismo valor, pero la inversa responde en ${INV_RANGE[fn]}: es $-${ref}°$.` },
+          { value: 180 + ref, label: 'Cuadrante equivocado', explain: `Ese ángulo queda fuera de ${INV_RANGE[fn]}, donde vive la respuesta de la inversa.` },
+        ]
+        : [
+          { value: 90 - ref, label: 'Ángulo complementario', explain: `Ese es el ángulo cuyo **${fn === 'sin' ? 'coseno' : fn === 'cos' ? 'seno' : 'cotangente'}** vale $${t}$. Revisa la tabla de valores notables.` },
+          { value: 1 / v, label: 'Recíproco, no inversa', explain: `$\\${fn}^{-1}$ no es $\\dfrac{1}{\\${fn}}$: la inversa devuelve un **ángulo**.` },
+          { value: (ref * Math.PI) / 180, label: 'Respuesta en radianes', explain: 'El valor es correcto pero en **radianes**. Se pide en grados.' },
+        ],
+    });
+  }
+  if (level === 4) {
+    const kind = pick(['rampa', 'escalera', 'sombra'] as const);
+    let L = 0, s = 0;
+    do { L = rnd(5, 14); s = rndDec(1.5, L - 1.5, 1); } while (s / L < 0.2 || s / L > 0.95);
+    if (kind === 'sombra') {
+      const h = rnd(3, 12), sh = rndDec(2, 14, 1);
+      const ans = atanDeg(h / sh);
+      return mk('inverse', 4, {
+        title: 'Altura del sol', statement: `Un poste de ${h} m proyecta una sombra de ${fmt(sh, 1)} m. ¿Con qué ángulo sobre el horizonte llegan los rayos del sol?`,
+        data: [`Altura: ${h} m (opuesto)`, `Sombra: ${fmt(sh, 1)} m (adyacente)`], kind: 'numeric', answer: ans, unit: '°', tolerance: 0.06, answerHint: 'Grados con 1 decimal, calculadora en DEG.',
+        figure: { type: 'right', thetaAt: 'A', labels: { a: `${h}`, b: fmt(sh, 1) } },
+        hints: ['Conoces el lado opuesto y el adyacente al ángulo: la razón es la tangente.', '$\\theta = \\tan^{-1}\\!\\left(\\dfrac{\\text{altura}}{\\text{sombra}}\\right)$'],
+        steps: [`$\\tan\\theta = \\dfrac{${h}}{${tex(sh, 1)}} \\approx ${tex(h / sh, 4)}$`, `$\\theta = \\tan^{-1}(${tex(h / sh, 4)}) \\approx ${tex(ans, 2)}°$`],
+        mistakes: [
+          { value: atanDeg(sh / h), label: 'Razón invertida', explain: 'Dividiste sombra entre altura. La tangente es **opuesto / adyacente**: altura entre sombra.' },
+          { value: Math.atan(h / sh), label: 'Resultado en radianes', explain: 'La calculadora está en **RAD**. Cámbiala a **DEG**.' },
+          { value: h / sh, label: 'Faltó la inversa', explain: 'Ese número es $\\tan\\theta$, no el ángulo. Aplica $\\tan^{-1}$.' },
+        ],
+      });
+    }
+    const isRamp = kind === 'rampa';
+    const ans = isRamp ? asinDeg(s / L) : acosDeg(s / L);
+    return mk('inverse', 4, {
+      title: isRamp ? 'Inclinación de una rampa' : 'Ángulo de una escalera',
+      statement: isRamp
+        ? `Una rampa de ${L} m de largo sube ${fmt(s, 1)} m de altura. ¿Qué ángulo forma con el suelo?`
+        : `Una escalera de ${L} m se apoya en un muro con su base a ${fmt(s, 1)} m de él. ¿Qué ángulo forma con el suelo?`,
+      data: isRamp ? [`Largo: ${L} m (hipotenusa)`, `Altura: ${fmt(s, 1)} m (opuesto)`] : [`Escalera: ${L} m (hipotenusa)`, `Distancia al muro: ${fmt(s, 1)} m (adyacente)`],
+      kind: 'numeric', answer: ans, unit: '°', tolerance: 0.06, answerHint: 'Grados con 1 decimal, calculadora en DEG.',
+      figure: { type: 'right', thetaAt: 'A', labels: isRamp ? { a: fmt(s, 1), c: `${L}` } : { b: fmt(s, 1), c: `${L}` } },
+      hints: [isRamp ? 'Conoces el opuesto y la hipotenusa: la razón es el seno.' : 'Conoces el adyacente y la hipotenusa: la razón es el coseno.', `$\\theta = \\${isRamp ? 'sin' : 'cos'}^{-1}\\!\\left(\\dfrac{${tex(s, 1)}}{${L}}\\right)$`],
+      steps: [`$\\${isRamp ? 'sin' : 'cos'}\\theta = \\dfrac{${tex(s, 1)}}{${L}} \\approx ${tex(s / L, 4)}$`, `$\\theta = \\${isRamp ? 'sin' : 'cos'}^{-1}(${tex(s / L, 4)}) \\approx ${tex(ans, 2)}°$`],
+      mistakes: [
+        { value: isRamp ? acosDeg(s / L) : asinDeg(s / L), label: 'Seno ↔ coseno', explain: isRamp ? 'Usaste $\\cos^{-1}$. La altura es el lado **opuesto** al ángulo con el suelo: corresponde $\\sin^{-1}$.' : 'Usaste $\\sin^{-1}$. La distancia al muro es el lado **adyacente**: corresponde $\\cos^{-1}$.' },
+        { value: atanDeg(s / L), label: 'Usaste tangente', explain: 'La tangente relaciona los dos catetos. Aquí uno de los datos es la **hipotenusa**.' },
+        { value: isRamp ? Math.asin(s / L) : Math.acos(s / L), label: 'Resultado en radianes', explain: 'La calculadora está en **RAD**. Cámbiala a **DEG**.' },
+        { value: s / L, label: 'Faltó la inversa', explain: 'Ese número es la razón, no el ángulo. Aplica la función inversa.' },
+      ],
+    });
+  }
+  // nivel 5: composición con un triángulo auxiliar
+  const tr = pick(TRIPLES);
+  const [a, b] = Math.random() < 0.5 ? [tr[0], tr[1]] : [tr[1], tr[0]];
+  const c = tr[2];
+  const ratio: Record<Fn3, [number, number]> = { sin: [a, c], cos: [b, c], tan: [a, b] };
+  const outer = pick((['sin', 'cos', 'tan'] as const).filter((f) => f !== fn));
+  const [n1, d1] = ratio[fn], [n2, d2] = ratio[outer];
+  const [n3, d3] = ratio[(['sin', 'cos', 'tan'] as const).find((f) => f !== fn && f !== outer)!];
+  return mk('inverse', 5, {
+    title: 'Componer sin calculadora', statement: `Calcula el valor exacto de $\\${outer}\\!\\left(\\${fn}^{-1}\\tfrac{${n1}}{${d1}}\\right)$.`,
+    data: [`$\\theta = \\${fn}^{-1}\\tfrac{${n1}}{${d1}}$ es un ángulo agudo`], kind: 'numeric', answer: n2 / d2, answerHint: 'Fracción (ej: 3/5) o decimal con 3 cifras.',
+    hints: [`Llama $\\theta$ al ángulo de adentro: entonces $\\${fn}\\theta = \\tfrac{${n1}}{${d1}}$. Dibuja un triángulo rectángulo con esos lados.`, 'Encuentra el tercer lado con Pitágoras y lee la razón que te piden.'],
+    steps: [`Sea $\\theta = \\${fn}^{-1}\\tfrac{${n1}}{${d1}}$, es decir $\\${fn}\\theta = \\tfrac{${n1}}{${d1}}$.`, `Triángulo: opuesto $${a}$, adyacente $${b}$, hipotenusa $${c}$ (porque $${a}^2 + ${b}^2 = ${c}^2$).`, `$\\${outer}\\theta = \\dfrac{${n2}}{${d2}} \\approx ${tex(n2 / d2, 4)}$`],
+    mistakes: [
+      { value: n1 / d1, label: 'No se cancelan', explain: `$\\${outer}$ y $\\${fn}^{-1}$ son funciones **distintas**: no se anulan. Solo $\\${fn}(\\${fn}^{-1}x) = x$.` },
+      { value: d2 / n2, label: 'Razón invertida', explain: 'Tienes los lados correctos pero dividiste al revés.' },
+      { value: n3 / d3, label: 'Otra razón', explain: `Ese es el valor de otra razón del mismo triángulo, no de $\\${outer}\\theta$.` },
+    ],
+  });
+}
+
+// ======================================================
+// ECUACIONES TRIGONOMÉTRICAS
+// ======================================================
+function genEquations(level: Level): Problem {
+  if (level === 1) {
+    const fn = pick(['sin', 'cos'] as const);
+    const [k, n] = pick([[0.5, 2], [1, 1], [-1, 1], [2, 0], [0.3, 2], [-0.8, 2], [1.5, 0], [-1.2, 0]] as const);
+    const opts = ['Ninguna', '1', '2', 'Infinitas'];
+    const correct = opts[n];
+    const why: Record<string, string> = {
+      Ninguna: `No hay solución solo cuando $|k| > 1$. Aquí $k = ${tex(k)}$ sí está entre $-1$ y $1$.`,
+      1: 'Una única solución ocurre solo en los extremos $k = \\pm1$, donde la recta toca justo la cresta o el valle.',
+      2: n === 1 ? `Con $k = ${tex(k)}$ la recta toca la curva en un solo punto (el extremo): las dos soluciones se funden en una.` : `$\\${fn}$ nunca vale $${tex(k)}$: su recorrido es $[-1, 1]$.`,
+      Infinitas: 'Infinitas hay en **todos** los reales. En una sola vuelta, $[0°, 360°)$, la cantidad es finita.',
+    };
+    const wrong = opts.filter((o) => o !== correct);
+    const { choices, answer, choiceExplain } = shuffleChoices(correct, wrong, wrong.map((o) => why[o]));
+    return mk('equations', 1, {
+      title: 'Contar soluciones', statement: `¿Cuántas soluciones tiene $\\${fn}\\,x = ${tex(k)}$ en $[0°, 360°)$?`, data: [`$k = ${tex(k)}$`, 'Una vuelta completa'],
+      kind: 'choice', choices, answer, choiceExplain,
+      hints: [`Imagina la recta horizontal $y = ${tex(k)}$ sobre la gráfica de $\\${fn}\\,x$: ¿cuántas veces la corta en una vuelta?`, `Recuerda que $-1 \\le \\${fn}\\,x \\le 1$.`],
+      steps: [n === 0 ? `$|${tex(k)}| > 1$: fuera del recorrido de $\\${fn}$ → **ninguna**.` : n === 1 ? `$k = ${tex(k)}$ es un extremo: se alcanza una sola vez por vuelta → **1**.` : `$|${tex(k)}| < 1$: la recta corta la curva dos veces por vuelta → **2**.`],
+    });
+  }
+  const fn = pick(['sin', 'cos', 'tan'] as const);
+  const [t, , ref] = pick(NOTABLE3[fn]);
+  if (level === 2) {
+    const sols = { sin: 180 - ref, cos: 360 - ref, tan: 180 + ref };
+    const ans = sols[fn];
+    const sym = { sin: 'El seno se repite por simetría respecto del **eje Y**: $180° - \\theta$.', cos: 'El coseno se repite por simetría respecto del **eje X**: $360° - \\theta$.', tan: 'La tangente se repite cada **media vuelta**: $\\theta + 180°$.' };
+    return mk('equations', 2, {
+      title: 'La otra solución', statement: `Una solución de $\\${fn}\\,x = ${t}$ es $x = ${ref}°$. ¿Cuál es la **otra** solución en $[0°, 360°)$?`,
+      data: [`$\\${fn}\\,${ref}° = ${t}$`, 'Intervalo: $[0°, 360°)$'], kind: 'numeric', answer: ans, unit: '°',
+      hints: ['Busca en el círculo unitario otro punto con el mismo valor.', sym[fn]],
+      steps: [sym[fn], `$x_2 = ${fn === 'sin' ? `180° - ${ref}°` : fn === 'cos' ? `360° - ${ref}°` : `${ref}° + 180°`} = ${ans}°$`],
+      mistakes: (['sin', 'cos', 'tan'] as const).filter((f) => f !== fn).map((f) => ({ value: sols[f], label: `Regla ${f === 'tan' ? 'de la tangente' : `del ${FN_ES[f]}`}`, explain: `Esa regla es la de **${FN_ES[f]}**. ${sym[fn]}` })),
+    });
+  }
+  if (level === 3) {
+    const sols = fn === 'sin' ? [180 + ref, 360 - ref] : fn === 'cos' ? [180 - ref, 180 + ref] : [180 - ref, 360 - ref];
+    const askMin = Math.random() < 0.5;
+    const ans = askMin ? sols[0] : sols[1];
+    const quad = fn === 'sin' ? 'III y IV' : fn === 'cos' ? 'II y III' : 'II y IV';
+    return mk('equations', 3, {
+      title: 'Valor negativo', statement: `Resuelve $\\${fn}\\,x = -${t}$ en $[0°, 360°)$ y entrega la solución **${askMin ? 'menor' : 'mayor'}**.`,
+      data: [`Ángulo de referencia: $${ref}°$`, `$\\${fn}$ es negativo en los cuadrantes ${quad}`], kind: 'numeric', answer: ans, unit: '°',
+      hints: [`Primero ignora el signo: $\\${fn}\\,${ref}° = ${t}$. Ese es el ángulo de **referencia**.`, `El ${FN_ES[fn]} es negativo en los cuadrantes ${quad}: construye ahí los ángulos con referencia $${ref}°$.`],
+      steps: [`Referencia: $${ref}°$.`, `Cuadrantes ${quad}: $x = ${sols[0]}°$ y $x = ${sols[1]}°$.`, `La ${askMin ? 'menor' : 'mayor'} es $${ans}°$.`],
+      mistakes: [
+        { value: askMin ? sols[1] : sols[0], label: 'Es la otra', explain: `Ese ángulo también es solución, pero se pide la **${askMin ? 'menor' : 'mayor'}**.` },
+        { value: ref, label: 'Ignoraste el signo', explain: `$${ref}°$ resuelve la ecuación con valor **positivo**. Con signo negativo cambian los cuadrantes.` },
+        { value: fn === 'cos' ? 360 - ref : -ref, label: fn === 'cos' ? 'Cuadrante equivocado' : 'Fuera del intervalo', explain: fn === 'cos' ? 'En el IV cuadrante el coseno es **positivo**.' : `La calculadora entrega $-${ref}°$, que no está en $[0°, 360°)$. Súmale $360°$ y busca también la otra solución.` },
+      ],
+    });
+  }
+  if (level === 4) {
+    const B = pick([2, 3, 4]);
+    const per = (fn === 'tan' ? 180 : 360) / B;
+    const count = 2 * B; // sen/cos: 2 por vuelta × B vueltas · tan: 1 por período, 2B períodos
+    if (Math.random() < 0.5) {
+      return mk('equations', 4, {
+        title: 'Contar con frecuencia', statement: `¿Cuántas soluciones tiene $\\${fn}(${B}x) = ${t}$ en $[0°, 360°)$?`, data: [`$B = ${B}$`, `Período de $\\${fn}(${B}x)$: $${tex(per, 2)}°$`],
+        kind: 'numeric', answer: count,
+        hints: [`Con $u = ${B}x$, cuando $x$ da una vuelta $u$ da **${B}**.`, fn === 'tan' ? 'La tangente toma cada valor **una vez por período**. ¿Cuántos períodos caben en $360°$?' : 'En cada vuelta de $u$ hay 2 soluciones.'],
+        steps: fn === 'tan'
+          ? [`Período de $\\tan(${B}x)$: $\\dfrac{180°}{${B}} = ${tex(per, 2)}°$.`, `Una solución por período: $\\dfrac{360°}{${tex(per, 2)}°} = ${count}$ soluciones.`]
+          : [`$x \\in [0°, 360°) \\Rightarrow u = ${B}x \\in [0°, ${360 * B}°)$: ${B} vueltas.`, `2 soluciones por vuelta × ${B} vueltas $= ${count}$.`],
+        mistakes: fn === 'tan'
+          ? [{ value: B, label: 'Período de la tangente', explain: 'La tangente se repite cada **180°**, no cada 360°: hay el doble de soluciones.' }, { value: 2, label: 'Olvidaste B', explain: `Eso vale para $\\tan x$. Con $${B}x$ el ángulo gira ${B} veces más rápido.` }]
+          : [{ value: 2, label: 'Olvidaste B', explain: `Eso vale para $\\${fn}\\,x$. Con $${B}x$ el ángulo da ${B} vueltas: hay ${B} veces más soluciones.` }, { value: B, label: 'Faltó la segunda familia', explain: 'En cada vuelta hay **dos** ángulos con el mismo valor.' }],
+      });
+    }
+    const ans = ref / B;
+    return mk('equations', 4, {
+      title: 'La primera solución positiva', statement: `¿Cuál es la **menor** solución positiva de $\\${fn}(${B}x) = ${t}$?`, data: [`$\\${fn}\\,${ref}° = ${t}$`, `$B = ${B}$`],
+      kind: 'numeric', answer: ans, unit: '°', answerHint: 'En grados.',
+      hints: [`Cambia de variable: $u = ${B}x$ y resuelve $\\${fn}\\,u = ${t}$.`, `El menor $u$ positivo es $${ref}°$. Luego $x = \\dfrac{u}{${B}}$.`],
+      steps: [`$${B}x = ${ref}°$ (el menor ángulo positivo con ese valor).`, `$x = \\dfrac{${ref}°}{${B}} = ${tex(ans, 2)}°$`],
+      mistakes: [
+        { value: ref, label: 'Faltó dividir por B', explain: `$${ref}°$ es el valor de $${B}x$, no de $x$. Divide por ${B}.` },
+        { value: ref * B, label: 'Multiplicaste por B', explain: `Para despejar $x$ de $${B}x = ${ref}°$ se **divide** por ${B}.` },
+      ],
+    });
+  }
+  // nivel 5: aplicación — ¿cuándo se alcanza una altura?
+  const R = rnd(8, 20), H = R + rnd(2, 5), T = pick([24, 30, 36, 40, 60]);
+  const frac = pick([-0.5, 0.5, 0.25, -0.25, 0.6, -0.6, 0.8]);
+  const h0 = H - R * frac, w = 360 / T;
+  const ans = acosDeg(frac) / w;
+  return mk('equations', 5, {
+    title: '¿Cuándo llego a esa altura?', statement: `En una rueda de la fortuna tu altura es $h(t) = ${H} - ${R}\\cos(${tex(w, 2)}°\\,t)$ metros, con $t$ en segundos y subiendo desde abajo en $t = 0$. ¿En qué instante alcanzas **por primera vez** los ${fmt(h0, 2)} m?`,
+    data: [`$h(t) = ${H} - ${R}\\cos(${tex(w, 2)}°\\,t)$`, `Altura buscada: ${fmt(h0, 2)} m`, `Período: ${T} s`], kind: 'numeric', answer: ans, unit: 's', answerHint: '2 decimales, calculadora en DEG.',
+    hints: ['Iguala $h(t)$ a la altura y **despeja el coseno** antes de usar la inversa.', `$\\cos(${tex(w, 2)}°\\,t) = \\dfrac{${H} - ${tex(h0, 2)}}{${R}}$. Luego $\\cos^{-1}$ y divide por $${tex(w, 2)}°$.`],
+    steps: [`$${H} - ${R}\\cos(${tex(w, 2)}°\\,t) = ${tex(h0, 2)} \\Rightarrow \\cos(${tex(w, 2)}°\\,t) = ${tex(frac, 2)}$`, `$${tex(w, 2)}°\\,t = \\cos^{-1}(${tex(frac, 2)}) \\approx ${tex(acosDeg(frac), 2)}°$ (la primera vez es el ángulo principal).`, `$t = \\dfrac{${tex(acosDeg(frac), 2)}°}{${tex(w, 2)}°} \\approx ${tex(ans, 2)}$ s`],
+    mistakes: [
+      { value: acosDeg(frac), label: 'Faltó dividir', explain: `Ese es el **ángulo** girado. Para el tiempo divide por $${tex(w, 2)}°$ por segundo.` },
+      { value: acosDeg(-frac) / w, label: 'Signo al despejar', explain: `Al pasar el término restando queda $\\cos(\\dots) = \\dfrac{${H} - h}{${R}}$, no $\\dfrac{h - ${H}}{${R}}$.` },
+      { value: T - ans, label: 'Es la segunda vez', explain: 'Esa es la segunda vez que pasas por esa altura (al **bajar**). Se pide la primera.' },
+      { value: Math.acos(frac) / w, label: 'Calculadora en radianes', explain: 'El modelo está en grados: usa **DEG**.' },
+    ],
+  });
+}
+
+// ======================================================
+// ÁNGULO DOBLE Y ÁNGULO MITAD
+// ======================================================
+function genDouble(level: Level): Problem {
+  if (level === 1) {
+    const isSin = Math.random() < 0.5;
+    const correct = isSin ? '$2\\sin\\theta\\cos\\theta$' : pick(['$\\cos^2\\theta - \\sin^2\\theta$', '$1 - 2\\sin^2\\theta$', '$2\\cos^2\\theta - 1$']);
+    const wrong = isSin ? ['$2\\sin\\theta$', '$\\sin^2\\theta$', '$\\sin\\theta\\cos\\theta$'] : ['$2\\cos\\theta$', '$\\cos^2\\theta + \\sin^2\\theta$', '$1 - \\cos^2\\theta$'];
+    const explain = isSin
+      ? ['Duplicar el ángulo **no** duplica el seno: con $\\theta = 90°$ daría 2, imposible.', 'Eso es el seno **al cuadrado**, no el seno del doble.', 'Falta el **2**: $\\sin 2\\theta = 2\\sin\\theta\\cos\\theta$. (Ese producto es la mitad.)']
+      : ['Duplicar el ángulo **no** duplica el coseno: con $\\theta = 0°$ daría 2, imposible.', 'Esa suma vale siempre **1** (identidad fundamental). En $\\cos 2\\theta$ los cuadrados se **restan**.', 'Eso es $\\sin^2\\theta$. La forma correcta con un solo término es $1 - 2\\sin^2\\theta$ o $2\\cos^2\\theta - 1$.'];
+    const { choices, answer, choiceExplain } = shuffleChoices(correct, wrong, explain);
+    return mk('double', 1, {
+      title: 'Reconocer la fórmula', statement: `¿A qué es igual $\\${isSin ? 'sin' : 'cos'}\\,2\\theta$?`, data: ['Identidad de ángulo doble'],
+      kind: 'choice', choices, answer, choiceExplain,
+      hints: ['Viene de la suma de ángulos con $\\beta = \\alpha$.', `Comprueba con $\\theta = ${isSin ? '45°$: $\\sin 90° = 1' : '60°$: $\\cos 120° = -\\tfrac12'}$.`],
+      steps: [isSin ? '$\\sin(\\theta+\\theta) = \\sin\\theta\\cos\\theta + \\cos\\theta\\sin\\theta = 2\\sin\\theta\\cos\\theta$' : '$\\cos(\\theta+\\theta) = \\cos^2\\theta - \\sin^2\\theta$, que con $\\sin^2\\theta + \\cos^2\\theta = 1$ también se escribe $1 - 2\\sin^2\\theta$ o $2\\cos^2\\theta - 1$.'],
+    });
+  }
+  if (level === 2) {
+    const c = pick([0.6, 0.8, 0.28, 0.96, 0.2, 0.5, 0.9, 0.3]);
+    const ans = 2 * c * c - 1;
+    return mk('double', 2, {
+      title: 'Coseno del doble', statement: `Si $\\cos\\theta = ${tex(c)}$, calcula $\\cos 2\\theta$.`, data: [`$\\cos\\theta = ${tex(c)}$`], kind: 'numeric', answer: ans, answerHint: '4 decimales.',
+      hints: ['Usa la forma que solo necesita el coseno.', '$\\cos 2\\theta = 2\\cos^2\\theta - 1$'],
+      steps: [`$\\cos 2\\theta = 2\\cdot(${tex(c)})^2 - 1 = 2\\cdot${tex(c * c, 4)} - 1 = ${tex(ans, 4)}$`, ans < 0 ? 'Sale negativo: $2\\theta$ pasa de $90°$.' : 'Sale positivo: $2\\theta$ sigue siendo agudo.'],
+      mistakes: [
+        { value: 2 * c, label: 'Doblaste el valor', explain: '$\\cos 2\\theta \\neq 2\\cos\\theta$. Duplicar el ángulo no duplica el coseno.' },
+        { value: 1 - 2 * c * c, label: 'Fórmula del seno', explain: 'Usaste $1 - 2x^2$, que es la forma con **seno**. Con coseno es $2\\cos^2\\theta - 1$.' },
+        { value: c * c, label: 'Solo elevaste al cuadrado', explain: '$\\cos^2\\theta$ no es $\\cos 2\\theta$: falta multiplicar por 2 y restar 1.' },
+        { value: 2 * c * c + 1, label: 'Signo del 1', explain: 'El 1 va **restando**: $2\\cos^2\\theta - 1$.' },
+      ],
+    });
+  }
+  if (level === 3) {
+    const t = pick([0.5, 2, 3, 0.25, 1.5, 0.2, 4]);
+    const ans = (2 * t) / (1 - t * t);
+    return mk('double', 3, {
+      title: 'Tangente del doble', statement: `Si $\\tan\\theta = ${tex(t)}$, calcula $\\tan 2\\theta$.`, data: [`$\\tan\\theta = ${tex(t)}$`], kind: 'numeric', answer: ans, answerHint: 'Fracción o decimal con 3 cifras.',
+      hints: ['$\\tan 2\\theta = \\dfrac{2\\tan\\theta}{1 - \\tan^2\\theta}$', 'Calcula numerador y denominador por separado. Cuidado con el signo del denominador.'],
+      steps: [`Numerador: $2\\cdot${tex(t)} = ${tex(2 * t)}$`, `Denominador: $1 - ${tex(t)}^2 = ${tex(1 - t * t, 4)}$`, `$\\tan 2\\theta = \\dfrac{${tex(2 * t)}}{${tex(1 - t * t, 4)}} \\approx ${tex(ans, 4)}$${ans < 0 ? ' (negativa: $2\\theta$ es obtuso)' : ''}`],
+      mistakes: [
+        { value: 2 * t, label: 'Doblaste el valor', explain: '$\\tan 2\\theta \\neq 2\\tan\\theta$: falta dividir por $1 - \\tan^2\\theta$.' },
+        { value: (2 * t) / (1 + t * t), label: 'Signo del denominador', explain: 'El denominador es $1 - \\tan^2\\theta$ (con **menos**).' },
+        { value: (2 * t) / (t * t - 1), label: 'Denominador al revés', explain: 'Es $1 - \\tan^2\\theta$, no $\\tan^2\\theta - 1$: te cambió el signo.' },
+      ],
+    });
+  }
+  if (level === 4) {
+    const q = pick([1, 2, 3] as const);
+    const m = pick([0.28, 0.6, 0.8, 0.96, 0.5, 0.2]);
+    const c = q === 1 ? m : -m;
+    const fn = pick(['sin', 'cos'] as const);
+    const range = ['', '0° < \\theta < 90°', '90° < \\theta < 180°', '180° < \\theta < 270°'][q];
+    const halfRange = ['', '0°$ y $45°', '45°$ y $90°', '90°$ y $135°'][q];
+    const sign = fn === 'cos' && q === 3 ? -1 : 1;
+    const inside = fn === 'sin' ? (1 - c) / 2 : (1 + c) / 2;
+    const ans = sign * Math.sqrt(inside);
+    return mk('double', 4, {
+      title: 'Ángulo mitad', statement: `Se sabe que $\\cos\\theta = ${tex(c)}$ y que $${range}$. Calcula $\\${fn}\\dfrac{\\theta}{2}$.`,
+      data: [`$\\cos\\theta = ${tex(c)}$`, `$${range}$`], kind: 'numeric', answer: ans, answerHint: '4 decimales. Revisa el signo.',
+      hints: [fn === 'sin' ? '$\\sin\\dfrac{\\theta}{2} = \\pm\\sqrt{\\dfrac{1 - \\cos\\theta}{2}}$' : '$\\cos\\dfrac{\\theta}{2} = \\pm\\sqrt{\\dfrac{1 + \\cos\\theta}{2}}$', `El signo lo decide dónde cae $\\theta/2$: aquí está entre $${halfRange}$.`],
+      steps: [`$\\${fn}^2\\dfrac{\\theta}{2} = \\dfrac{1 ${fn === 'sin' ? '-' : '+'} ${texP(c)}}{2} = ${tex(inside, 4)}$`, `$\\theta/2$ está entre $${halfRange}$: ahí el ${FN_ES[fn]} es **${sign < 0 ? 'negativo' : 'positivo'}**.`, `$\\${fn}\\dfrac{\\theta}{2} = ${sign < 0 ? '-' : ''}\\sqrt{${tex(inside, 4)}} \\approx ${tex(ans, 4)}$`],
+      mistakes: [
+        { value: c / 2, label: 'Dividiste el coseno', explain: 'Partir el ángulo no parte el coseno: $\\cos\\dfrac{\\theta}{2} \\neq \\dfrac{\\cos\\theta}{2}$. Hace falta la fórmula con raíz.' },
+        { value: Math.sqrt(fn === 'sin' ? (1 + c) / 2 : (1 - c) / 2), label: 'Signo dentro de la raíz', explain: 'El seno usa $1 - \\cos\\theta$ y el coseno usa $1 + \\cos\\theta$. Los intercambiaste.' },
+        { value: -ans, label: 'Signo de la raíz', explain: `La raíz deja elegir $\\pm$. Con $\\theta/2$ entre $${halfRange}$, el ${FN_ES[fn]} es **${sign < 0 ? 'negativo' : 'positivo'}**.` },
+        { value: inside, label: 'Faltó la raíz', explain: `Ese valor es $\\${fn}^2\\dfrac{\\theta}{2}$. Saca la **raíz cuadrada**.` },
+      ],
+    });
+  }
+  // nivel 5: aplicación — alcance de un lanzamiento
+  const v = pick([10, 15, 20, 25, 30]), a = pick([15, 20, 25, 35, 40, 50, 55, 65, 70, 75]);
+  const g = 9.8;
+  const ans = (v * v * sinDeg(2 * a)) / g;
+  return mk('double', 5, {
+    title: 'Alcance de un lanzamiento', statement: `Un balón sale a ${v} m/s con un ángulo de $${a}°$ sobre el suelo. Su alcance es $R = \\dfrac{v^2\\sin 2\\theta}{g}$, con $g = 9{,}8\\ \\text{m/s}^2$. ¿A qué distancia cae?`,
+    data: [`$v = ${v}$ m/s`, `$\\theta = ${a}°$`, '$g = 9{,}8$ m/s²'], kind: 'numeric', answer: ans, unit: 'm', answerHint: '2 decimales, calculadora en DEG.',
+    hints: [`Primero el ángulo doble: $2\\theta = ${2 * a}°$.`, `$R = \\dfrac{${v}^2\\cdot\\sin ${2 * a}°}{9{,}8}$`],
+    steps: [`$2\\theta = ${2 * a}°$ y $\\sin ${2 * a}° \\approx ${tex(sinDeg(2 * a), 4)}$`, `$R = \\dfrac{${v * v}\\cdot${tex(sinDeg(2 * a), 4)}}{9{,}8} \\approx ${tex(ans, 2)}$ m`, `Con $${90 - a}°$ caería en el mismo lugar: $\\sin ${2 * (90 - a)}° = \\sin ${2 * a}°$.`],
+    mistakes: [
+      { value: (v * v * sinDeg(a)) / g, label: 'Usaste sen θ', explain: 'La fórmula lleva el seno del **ángulo doble**: $\\sin 2\\theta$, no $\\sin\\theta$.' },
+      { value: (v * v * 2 * sinDeg(a)) / g, label: '2 sen θ ≠ sen 2θ', explain: 'Multiplicaste el seno por 2. Hay que duplicar el **ángulo** antes de calcular el seno.' },
+      { value: (v * sinDeg(2 * a)) / g, label: 'Faltó el cuadrado', explain: 'La velocidad va **al cuadrado**: $v^2$.' },
+      { value: (v * v * Math.sin(2 * a)) / g, label: 'Calculadora en radianes', explain: 'El ángulo está en grados: usa **DEG**.' },
+    ],
+  });
+}
+
+// ======================================================
 export const GENERATORS: Record<Category, (level: Level) => Problem> = {
   coords: genCoords, distance: genDistance, slope: genSlope, angles: genAngles, triangles: genTriangles,
   right: genRight, pythagoras: genPythagoras, sin: genRatio('sin'), cos: genRatio('cos'), tan: genRatio('tan'),
   soh: genSoh, solve: genSolve, unit: genUnit, identity: genIdentity, oblique: genOblique, graphs: genGraphs, sum: genSum,
+  inverse: genInverse, equations: genEquations, double: genDouble,
 };
 
 export function generate(category: Category, level: Level): Problem {

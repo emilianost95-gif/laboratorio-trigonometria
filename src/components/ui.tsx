@@ -1,4 +1,4 @@
-import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { RichText } from './Tex';
 
 export function Panel({ title, eyebrow, actions, children, className = '', pad = true }: { title?: ReactNode; eyebrow?: string; actions?: ReactNode; children: ReactNode; className?: string; pad?: boolean }) {
@@ -31,7 +31,7 @@ export function Button({ variant = 'outline', size = 'md', className = '', ...re
   return (
     <button
       type="button"
-      className={`inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${v[variant]} ${s} ${className}`}
+      className={`press inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border font-medium disabled:cursor-not-allowed disabled:opacity-45 ${v[variant]} ${s} ${className}`}
       {...rest}
     />
   );
@@ -73,8 +73,25 @@ export function Slider({ id, label, value, min, max, step = 1, onChange, unit = 
 }
 
 export function Segmented<T extends string>({ value, options, onChange, size = 'md', ariaLabel }: { value: T; options: { value: T; label: ReactNode }[]; onChange: (v: T) => void; size?: 'sm' | 'md'; ariaLabel?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pill, setPill] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  // La "píldora" activa se mide y se desliza entre opciones (también si el control se parte en dos filas)
+  useLayoutEffect(() => {
+    const box = ref.current;
+    if (!box) return;
+    const measure = () => {
+      const el = box.querySelector<HTMLElement>('[aria-selected="true"]');
+      if (!el) { setPill(null); return; }
+      setPill((p) => (p && p.x === el.offsetLeft && p.y === el.offsetTop && p.w === el.offsetWidth && p.h === el.offsetHeight ? p : { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [value, options.length]);
   return (
-    <div role="tablist" aria-label={ariaLabel} className="inline-flex max-w-full flex-wrap rounded-lg border border-line bg-panel2 p-0.5">
+    <div ref={ref} role="tablist" aria-label={ariaLabel} className="relative inline-flex max-w-full flex-wrap rounded-lg border border-line bg-panel2 p-0.5">
+      {pill && <span aria-hidden className="seg-pill pointer-events-none absolute left-0 top-0 rounded-md bg-panel shadow-sm" style={{ transform: `translate(${pill.x}px, ${pill.y}px)`, width: pill.w, height: pill.h }} />}
       {options.map((o) => (
         <button
           key={o.value}
@@ -82,7 +99,7 @@ export function Segmented<T extends string>({ value, options, onChange, size = '
           type="button"
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`rounded-md font-medium transition-colors ${size === 'sm' ? 'px-2 py-1 text-[12px]' : 'px-3 py-1.5 text-[13px]'} ${value === o.value ? 'bg-panel text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
+          className={`press relative rounded-md font-medium ${size === 'sm' ? 'px-2 py-1 text-[12px]' : 'px-3 py-1.5 text-[13px]'} ${value === o.value ? 'text-ink' : 'text-muted hover:text-ink'}`}
         >
           {o.label}
         </button>

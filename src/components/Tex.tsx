@@ -1,13 +1,15 @@
 import katex from 'katex';
 import { Fragment, memo, useMemo, type ReactNode } from 'react';
 
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
 /** Fórmula renderizada con KaTeX (sin dangerouslySetInnerHTML con texto del usuario sin escapar: KaTeX escapa). */
 export const Tex = memo(function Tex({ children, display = false, className = '' }: { children: string; display?: boolean; className?: string }) {
   const html = useMemo(() => {
     try {
-      return katex.renderToString(children, { displayMode: display, throwOnError: false, strict: 'ignore', output: 'html' });
+      return katex.renderToString(children, { displayMode: display, throwOnError: false, strict: 'ignore', output: 'html', trust: false, maxExpand: 200, maxSize: 20 });
     } catch {
-      return children;
+      return escapeHtml(children);
     }
   }, [children, display]);
   return <span className={className} dangerouslySetInnerHTML={{ __html: html }} />;

@@ -67,7 +67,7 @@ function Router() {
   else page = <Home go={go} />;
   return (
     <Layout route={route} go={go}>
-      <ErrorBoundary resetKey={route}>{page}</ErrorBoundary>
+      <ErrorBoundary resetKey={route}><div key={route} className="page-in">{page}</div></ErrorBoundary>
       <FloatingCalculator />
       <Toaster />
     </Layout>

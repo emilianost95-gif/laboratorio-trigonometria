@@ -91,6 +91,71 @@ function migrate(raw: Record<string, unknown>): Record<string, unknown> {
   return raw;
 }
 
+const num = (v: unknown, d = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+const count = (v: unknown) => Math.max(0, Math.floor(num(v)));
+const str = (v: unknown, max: number, d = '') => (typeof v === 'string' ? v.slice(0, max) : d);
+const NOTE_KINDS: NoteKind[] = ['nota', 'resultado', 'formula', 'ejercicio', 'descubrimiento'];
+
+function tallies(v: unknown): Record<string, Tally> {
+  const out: Record<string, Tally> = {};
+  if (!isObj(v)) return out;
+  for (const [k, t] of Object.entries(v)) {
+    if (!isObj(t)) continue;
+    const attempts = count(t.attempts);
+    out[k] = { attempts, correct: Math.min(attempts, count(t.correct)) };
+  }
+  return out;
+}
+
+/**
+ * Valida la FORMA de cada registro (la fusión solo mira el primer nivel de tipos).
+ * Un respaldo editado a mano o dañado no debe dejar páginas rotas de forma permanente.
+ */
+export function sanitize(st: AppState): AppState {
+  const d = defaultState();
+  const modules: AppState['modules'] = {};
+  for (const [k, m] of Object.entries(st.modules)) {
+    if (isObj(m)) modules[k] = { visited: !!m.visited, practiceCorrect: count(m.practiceCorrect), completed: !!m.completed, labActions: count(m.labActions) };
+  }
+  const dg = st.diagnostic as unknown;
+  const diagnostic = isObj(dg) && typeof dg.startModule === 'string'
+    ? { date: num(dg.date), score: count(dg.score), total: count(dg.total), byArea: tallies(dg.byArea), level: str(dg.level, 80), startModule: dg.startModule.slice(0, 8) }
+    : null;
+  return {
+    version: SCHEMA_VERSION,
+    settings: {
+      theme: (['system', 'light', 'dark'] as const).includes(st.settings.theme) ? st.settings.theme : d.settings.theme,
+      angleMode: st.settings.angleMode === 'RAD' ? 'RAD' : 'DEG',
+      freeMode: !!st.settings.freeMode,
+      showTips: !!st.settings.showTips,
+    },
+    diagnostic,
+    modules,
+    concepts: tallies(st.concepts),
+    stats: {
+      attempts: count(st.stats.attempts), correct: count(st.stats.correct), solved: count(st.stats.solved),
+      firstTry: count(st.stats.firstTry), hintsUsed: count(st.stats.hintsUsed), xp: count(st.stats.xp), byLevel: tallies(st.stats.byLevel),
+    },
+    streak: {
+      current: count(st.streak.current), best: count(st.streak.best),
+      lastDay: typeof st.streak.lastDay === 'string' ? st.streak.lastDay.slice(0, 10) : null,
+      days: (Array.isArray(st.streak.days) ? st.streak.days : []).filter((x): x is string => typeof x === 'string').slice(-60),
+    },
+    history: (st.history as unknown[]).filter(isObj).slice(-80).map((h) => ({
+      id: str(h.id, 24) || Math.random().toString(36).slice(2), category: str(h.category, 24), level: count(h.level),
+      title: str(h.title, 200), correct: !!h.correct, firstTry: !!h.firstTry, date: num(h.date),
+    })),
+    notes: (st.notes as unknown[]).filter(isObj).slice(0, 500).map((n) => ({
+      id: str(n.id, 24) || Math.random().toString(36).slice(2, 10),
+      kind: NOTE_KINDS.includes(n.kind as NoteKind) ? (n.kind as NoteKind) : 'nota',
+      title: str(n.title, 200, 'Sin título'), body: str(n.body, 20_000),
+      module: typeof n.module === 'string' ? n.module.slice(0, 8) : undefined,
+      created: num(n.created), updated: num(n.updated), pinned: !!n.pinned,
+    })),
+    calcHistory: (st.calcHistory as unknown[]).filter(isObj).slice(-30).map((c) => ({ expr: str(c.expr, 200), result: str(c.result, 60), mode: c.mode === 'RAD' ? 'RAD' as const : 'DEG' as const })),
+  };
+}
+
 function safeGet(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
@@ -114,9 +179,7 @@ export function loadState(): AppState {
   try {
     const parsed = JSON.parse(txt);
     if (!isObj(parsed)) throw new Error('formato inválido');
-    const st = merge(defaultState(), migrate(parsed));
-    st.version = SCHEMA_VERSION;
-    return st;
+    return sanitize(merge(defaultState(), migrate(parsed)));
   } catch {
     safeSet(`${STORAGE_KEY}:backup-${Date.now()}`, txt);
     return defaultState();
@@ -147,10 +210,11 @@ export function exportState(state: AppState): string {
   return JSON.stringify(state);
 }
 export function importState(txt: string): AppState | null {
+  if (txt.length > 2_000_000) return null;
   try {
     const parsed = JSON.parse(txt);
     if (!isObj(parsed) || !('settings' in parsed)) return null;
-    return merge(defaultState(), migrate(parsed));
+    return sanitize(merge(defaultState(), migrate(parsed)));
   } catch {
     return null;
   }
